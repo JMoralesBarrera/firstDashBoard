@@ -1,0 +1,33 @@
+.mainContainer{
+
+    background: #621132;
+    box-sizing: border-box;
+
+}
+
+.header{
+    background: #621132;
+
+}
+
+
+.header_title{
+text-align: center;
+color:#ffffff;
+
+background: #621132;
+}
+
+
+.style{display:inline-block}
+
+.container {
+    width: 100%;
+    display: inline;
+}
+
+.half-width {
+    width: 50%;
+    float: left;
+}
+
