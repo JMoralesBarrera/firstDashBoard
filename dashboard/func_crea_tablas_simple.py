@@ -1,7 +1,7 @@
 from dash import dash_table
 
 
-def create_table_simple(id, data):
+def create_table_simple(id, name, data):
     return dash_table.DataTable(
         id=id,
         columns = [
@@ -31,5 +31,3 @@ def create_table_simple(id, data):
                         'textOverflow':'ellipsis'
             }
     )
-
-

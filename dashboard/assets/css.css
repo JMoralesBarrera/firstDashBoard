@@ -19,11 +19,10 @@ background: #621132;
 }
 
 
-.style{display:inline-block}
 
 .container {
     width: 100%;
-    display: inline;
+   
 }
 
 .half-width {
@@ -31,3 +30,21 @@ background: #621132;
     float: left;
 }
 
+
+@media only screen and (max-width: 768px) {
+    .table {
+      margin: 0 0 0 0px;
+    }
+  }
+
+  .etiqueta{
+
+    
+    font-weight: 'bold';
+    color:#b38e5d;
+    background: #621132;
+    font-size: 25px;
+    font-weight: bold;
+    font-family: Arial, sans-serif; }
+
+    .global{background: #621132;}

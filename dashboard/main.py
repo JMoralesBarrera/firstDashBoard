@@ -11,11 +11,12 @@ from dash import dash_table
 from dash.dash_table.Format import Group
 from dash import Dash, dash_table
 from func_crea_Graficos import crear_grafico_pie
-#from func_crea_tablas_simple import create_table_simple
+from func_crea_tablas_simple import create_table_simple
 # import dash_bootstrap_components as dbc
 
 
-meta_tags= [{'name':'viewport','content': 'width=device-width'}]
+meta_tags= [{'name':'viewport',
+            'content': 'width=device-width, initial-scale=1.0, maximum-scale=1.2,minimum-scale=0,5'}]
 external_stylesheets=[meta_tags,'assets/css.css','assets/normalize.css']
 #https://necolas.github.io/normalize.css/
 
@@ -24,7 +25,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 # Read data from Excel file
 df = pd.read_excel("Plantilla Qna 24.xlsx", sheet_name='Resultados')
-df = df[["UM", "RFC", "A.Paterno", "A.Materno", "Nombre", "SUELDO TAB", "CÓDIGO", "ADSCRIPCION", "Area Hosp", "Sub-Area Hosp", "NUCLEOS", "RAMA", "UNIDAD", "TURNO", "EN_PLANTILLA", "NORMATIVA"]]
+df = df[["UM", "RFC", "A.Paterno", "A.Materno", "Nombre", "SUELDO TAB", "CÓDIGO", "ADSCRIPCION", "Area Hosp", "Sub_Area_Hosp", "NUCLEOS", "RAMA", "UNIDAD", "TURNO", "EN_PLANTILLA", "NORMATIVA"]]
 
 # Define colors for the app
 colors = {
@@ -63,9 +64,9 @@ def set_cities_options(chosen_state):
 def set_cities_options(chosen_state1):  
         return [k['value']for k in chosen_state1 ][0]
 
+ 
 
-
- #----------------Decorador grafico general por ramas -----------------------------------------
+ #----------------Decorador grafico por unidad por ramas -----------------------------------------
 @app.callback(
     Output(component_id='the_graph1', component_property='figure'),
     
@@ -74,7 +75,7 @@ def set_cities_options(chosen_state1):
 def update_graph_pie(my_dropdown):
     return crear_grafico_pie(df, 'UNIDAD', my_dropdown,'numeroRama','RAMA','Distribución Global por Ramas')
 
-    #--------------Decorador grafico general por Turnos -----------------------------------------
+    #--------------Decorador grafico por unidad por Turnos -----------------------------------------
 @app.callback(
      Output(component_id='the_graphTurnos', component_property='figure'),
      Input(component_id='seleccionaUnidad', component_property='value')      
@@ -145,8 +146,30 @@ def update_table(seleccionaUnidad):
      return dffTabla2.to_dict('records')
    
 
-
 #------------decorador tabla global rama ----------------
+@app.callback(
+ Output(component_id='tabla6', component_property='data'),   
+ Input(component_id='seleccionaUnidades', component_property='value')    
+)
+
+def update_table(seleccionaUnidades):
+      
+     #dffTabla = df[df['ADSCRIPCION']==(seleccionaUnidades)]
+     
+     dffTabla3= df.groupby(['UNIDAD']).size().reset_index(name='EN_PLANTILLA')
+     
+      # Calcula el total de la columna 'EN_PLANTILLA'
+     TOTAL = dffTabla3['EN_PLANTILLA'].sum()
+
+    # Agrega una fila al final de la tabla con el total
+     dffTabla3 = dffTabla3.append({'UNIDAD': 'TOTAL', 'EN_PLANTILLA': TOTAL}, ignore_index=True)
+
+
+
+     return dffTabla3.to_dict('records')
+   
+
+#------------decorador tabla por Unidad rama ----------------
 @app.callback(
  Output(component_id='tabla3', component_property='data'),   
 Input(component_id='seleccionaUnidades', component_property='value')    
@@ -235,262 +258,103 @@ def update_table(seleccionaUnidades):
     # Aquí podemos utilizar dffTabla1x sin problema
     return dffTabla1x.to_dict('records')
 
-   
+  
+
 
  #----------------------app.layout-------------------------
 
 app.layout= html.Div([
-    
-    html.Div([
-                # Create marquee
+   
+        html.Div([
+#------------------------ Create marquee--------------------------------------------------
                 html.Marquee(id='marquee', children='Prueba rápida VIH, márcate un día y háztela.', style={'color': colors['text2']}),
-                # Create logo
+#-------------------------Create logo-----------------------------------------------------
                 html.Img(src='assets/logo.png'),
-                    ],className='header'),
-   
-    html.Div([
-                # Create header
-                html.H1("DIRECCIÓN DE RECURSOS HUMANOS", className='title_text')
-                ],className='header_title'),
+        ],className='header'),
+#---------------------Create header--------------------------------------------------------   
+        html.Div([
 
-                 
-   
-    html.Div([
+                html.H1("DIRECCIÓN DE RECURSOS HUMANOS",)
+        ],className='header_title'),
+
+       # html.Label("Distribucion Global:", style={'fontSize':20, 'textAlign':'center', 'font-weight': 'bold','color': colors['text']}), 
+        html.Label("Distribucion Global:", className='etiqueta'), 
+               
+#--------------------------tabla globlal secretaria----------------------------        
+        html.Div([
+            create_table_simple('tabla6', 'UNIDAD', 'UNIDAD'), 
+        ]),
+
+        html.Div([
                 
-        html.Label("Seleccione una Unidad:", style={'fontSize': 15, 'textAlign': 'center', 'font-weight': 'bold', 'color': colors['text']}),
-        #-------------------Primer Dropdown-----------------------------------------
-        dcc.Dropdown(
-        id='seleccionaUnidad',
-        options=[{'label': s, 'value': s} for s in sorted(df.UNIDAD.unique())],
-        value='HOSPITALES',
-        clearable=False,
-        searchable=False,
-        style={'backgroundColor': colors['background2'],'color': colors['text1'], 'font-size': 15, 'font-weight': 'bold'})
+                html.Label("Seleccione una Unidad:", className='etiqueta'),
+#-------------------Primer Dropdown-----------------------------------------
+                dcc.Dropdown(
+                id='seleccionaUnidad',
+                options=[{'label': s, 'value': s} for s in sorted(df.UNIDAD.unique())],
+                value='HOSPITALES',
+                clearable=False,
+                searchable=False,
+                style={'backgroundColor': colors['background2'],'color': colors['text1'], 'font-size': 15, 'font-weight': 'bold'})
 
-    ]),
+        ]),
 
-   
-
-    html.Div([
-        #---------------------grafica ramas--------------------------------------------
-         dcc.Graph(id='the_graph1'),
-       
-        
-        #------------------- tabla unidades principal----------------------------------
-        html.Label("Distribucion Global por Ramas:", style={'fontSize':20, 'textAlign':'center', 'font-weight': 'bold','color': colors['text']}), 
-        
-        dash_table.DataTable(       
-            id='tabla',        
-
-            columns = [
-            {"name": "RAMA", "id": "RAMA"},
-            {"name": "EN_PLANTILLA","id": "EN_PLANTILLA",},
-            ],
-
+        html.Div([
+                
+#------------------- tabla por unidad por ramas----------------------------------
+                html.Label("Distribucion de Unidad por Ramas:", className='etiqueta'),
+                                
+#---------------------grafica ramas--------------------------------------------
+                dcc.Graph(id='the_graph1'),                
+                        
+                create_table_simple('tabla', 'RAMA', 'RAMA'),          
+        ]),
             
-            sort_action="native",
-            sort_mode="multi",
-            column_selectable="single",
-          
-           
-            selected_columns=[],
-            selected_rows=[],
-          
-            page_action="native",
-            page_current= 0,
-            page_size= 10,
-            
-            style_data=   {'color':  '#ffffff',
-                           'backgroundColor':'#621132'},
+#-----------------------------------------------------------------------------------------------
+                html.Label("Distribucion Global por Turnos:", className='etiqueta'),
+#------------------------grafico rama por unidad---------------------------------
+                dcc.Graph(id='the_graphTurnos'),
 
-            fixed_rows =  {'headers':True},
+#------------------- tabla por unidad por Turnos----------------------------------
+                create_table_simple('tabla2', "TURNO", "TURNO"),
 
-            style_table = {'maxHeight':'px',
-                           'backgroundColor':'#621132',                        
-                           'color':  '#ffffff'},
+        html.Div([
+                html.Label("Seleccione una Adscripción:", className='etiqueta'),
+                #----------------------Segundo Dropdown--------------------------------------
+                dcc.Dropdown(  
+                id='seleccionaUnidades',   
+                options=[],
+                multi=False,
+                style={'backgroundColor': colors['background2'],'color': colors['text1'], 'font-size': 15, 'font-weight': 'bold'})        
+        ],style={'border-color': '#333', 'border-width': '2px', 'border-style': 'dashed'}),
 
-            style_header = {'backgroundColor':'#000000',
-                            'fontWeight':'bold',
-                            'border':'4px solid white',
-                            'textAlign':'center'},
+        html.Div([
 
-            style_cell =  { 'textAlign':'left',
-                            'border':'4px solid white',
-                            'color':'#b38e5d',
-                            'maxWidth':'10px',                           
-                            'textOverflow':'ellipsis'
+                html.Label("Distribucion por Unidad por Rama:", className='etiqueta'),
+#-----------------------------------grafico por unidad por ramas------------------------------------------
+                dcc.Graph(id='theGraphUnidadRamas'),   
+#---------------------------------- tabla Unidades rama  -------------------------------------------------
+               
+                create_table_simple('tabla3', "RAMA", "RAMA"),
+                
+        ]),
 
-                }
-                )
-
-
-
-
-    ], className='container'),
-    
-
-
-    html.Div([
-
-        #------------------tabla turnos------------------------
-   # num_rows = len(dffTabla2)  # replace df with your dataframe
-  html.Label("Distribucion Global por Turnos:", style={'fontSize':20, 'textAlign':'center', 'font-weight': 'bold','color': colors['text']}),  
-    #-------------------grafico rama por unidad------------------------
-        dcc.Graph(id='the_graphTurnos'),
-dash_table.DataTable(
-    id='tabla2',
-    columns = [
-        {"name": "TURNO", "id": "TURNO"},
-        {"name": "EN_PLANTILLA","id": "EN_PLANTILLA",}, 
-    ],
-    sort_action="native",
-    sort_mode="multi",
-    column_selectable="single",         
-    selected_columns=[],
-    selected_rows=[],
-    page_action="native",  # set this to 'none'
-   # page_current= 0,
-   # page_size= 10,  # set this to the total number of rows
-    style_data=     {'color':  '#ffffff',
-                     'backgroundColor':'#621132'},
-    
-    fixed_rows =    {'headers':True},
-    
-    style_table =   {'maxHeight':'350px',
-                     'backgroundColor':'#621132',
-                     'color':  '#ffffff',
-                     'overflowY': 'none'},  # set this to 'none'
-    
-    style_header =  {'backgroundColor':'#000000',
-                     'fontWeight':'bold',
-                     'border':'4px solid white',
-                     'textAlign':'center'},        
-    
-    style_cell =    {'textAlign':'left',
-                     'border':'4px solid white',
-                     'color':'#b38e5d',
-                     'maxWidth':'10px',                           
-                     'textOverflow':'ellipsis'
-            }
-)
- 
-
-    ]), 
-
-html.Div([
-        html.Label("Seleccione una Adscripción:", style={'fontSize':15, 'textAlign':'center', 'font-weight': 'bold','color': colors['text']}),
-        #----------------------Segundo Dropdown--------------------------------------
-        dcc.Dropdown(  
-        id='seleccionaUnidades',   
-        options=[],
-        multi=False,
-        style={'backgroundColor': colors['background2'],'color': colors['text1'], 'font-size': 15, 'font-weight': 'bold'})        
-     ],style={'border-color': '#333', 'border-width': '2px', 'border-style': 'dashed'}),
-
-html.Div([
-    #--------------------grafico por unidad por ramas------------------------------------------
-      dcc.Graph(id='theGraphUnidadRamas'),   
-    #------------------- tabla Unidades rama  ----------------------------------
-        html.Label("Distribucion por Unidad por Rama:", style={'fontSize':20, 'textAlign':'center', 'font-weight': 'bold','color': colors['text']}),  
-        dash_table.DataTable(       
-            id='tabla3',        
-
-            columns = [
-            {"name": "RAMA", "id": "RAMA"},
-            {"name": "EN_PLANTILLA","id": "EN_PLANTILLA",},
-            ],
-
-            
-            sort_action="native",
-            sort_mode="multi",
-            column_selectable="single",
-          
-           
-            selected_columns=[],
-            selected_rows=[],
-          
-            page_action="native",
-            page_current= 0,
-            page_size= 10,
-            
-            style_data=   {'color':  '#ffffff',
-                           'backgroundColor':'#621132'},
-
-            fixed_rows =  {'headers':True},
-
-            style_table = {'maxHeight':'px',
-                           'backgroundColor':'#621132',                        
-                           'color':  '#ffffff'},
-
-            style_header = {'backgroundColor':'#000000',
-                            'fontWeight':'bold',
-                            'border':'4px solid white',
-                            'textAlign':'center'},
-
-            style_cell =  { 'textAlign':'left',
-                            'border':'4px solid white',
-                            'color':'#b38e5d',
-                            'maxWidth':'10px',                           
-                            'textOverflow':'ellipsis'
-
-                }
-                )
-
-]),
-
- html.Div([
+        html.Div([
      
-        #------------------tabla por unidad  turnos------------------------
  #--------------------grafico por unidad por ramas------------------------------------------
-      dcc.Graph(id='theGraphUnidadTurnos'), 
- 
- html.Label("Distribucion por Unidad por Turnos:", style={'fontSize':20, 'textAlign':'center', 'font-weight': 'bold','color': colors['text']}),  
+         
+        html.Label("Distribucion por Unidad por Turnos:", className='etiqueta'),
+#-----------------------------------grafico por unidad por ramas------------------------------------------       
+        dcc.Graph(id='theGraphUnidadTurnos'), 
+ #------------------tabla por unidad  turnos-----------------------------------------------
+        create_table_simple('tabla4', "TURNO", "TURNO"),
+        create_table_simple('tabla8', "Sub_Area_Hosp", "Sub_Area_Hosp"),
 
-dash_table.DataTable(
-    id='tabla4',
-    columns = [
-        {"name": "TURNO", "id": "TURNO"},
-        {"name": "EN_PLANTILLA","id": "EN_PLANTILLA",}, 
-    ],
-    sort_action="native",
-    sort_mode="multi",
-    column_selectable="single",         
-    selected_columns=[],
-    selected_rows=[],
-    page_action="none",  # set this to 'none'
-   # page_current= 0,
-   # page_size= 10,  # set this to the total number of rows
-    style_data=     {'color':  '#ffffff',
-                     'backgroundColor':'#621132'},
-    
-    fixed_rows =    {'headers':True},
-    
-    style_table =   {'maxHeight':'350px',
-                     'backgroundColor':'#621132',
-                     'color':  '#ffffff',
-                     'overflowY': 'none'},  # set this to 'none'
-    
-    style_header =  {'backgroundColor':'#000000',
-                     'fontWeight':'bold',
-                     'border':'4px solid white',
-                     'textAlign':'center'},        
-    
-    style_cell =    {'textAlign':'left',
-                     'border':'4px solid white',
-                     'color':'#b38e5d',
-                     'maxWidth':'10px',                           
-                     'textOverflow':'ellipsis'
-            }
-)
- 
-
-    ]), 
-
-
+        ]), 
 
 html.Div([
     
-html.Label("Comparación de Normativa VS Plantilla:", style={'fontSize':20, 'textAlign':'center', 'font-weight': 'bold','color': colors['text']}),  
+html.Label("Comparación de Normativa VS Plantilla:", className='etiqueta'),
  # tabla nucleos
 dash_table.DataTable(
         id='table1X',
@@ -556,8 +420,6 @@ dash_table.DataTable(
                 'textAlign':'center',   
             }  
 
-
-
               ],
 
             style_cell = {
@@ -570,31 +432,13 @@ dash_table.DataTable(
                 'textOverflow':'ellipsis'
 
 
-                }
-
-
-)
-
-
+                }),
 
 
 
 ])
 
-   
-
-
-
-],className='row flex_display')
-
-
-
-
-
-
-
-
-
+])
 
 df.to_csv('modificado.csv')
 if __name__  == "__main__":
