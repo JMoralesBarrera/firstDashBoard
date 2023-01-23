@@ -25,7 +25,9 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 # Read data from Excel file
 df = pd.read_excel("Plantilla Qna 24.xlsx", sheet_name='Resultados')
+df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
 df = df[["UM", "RFC", "A.Paterno", "A.Materno", "Nombre", "SUELDO TAB", "CÓDIGO", "ADSCRIPCION", "Area Hosp", "Sub_Area_Hosp", "NUCLEOS", "RAMA", "UNIDAD", "TURNO", "EN_PLANTILLA", "NORMATIVA"]]
+
 
 # Define colors for the app
 colors = {
@@ -258,8 +260,86 @@ def update_table(seleccionaUnidades):
     # Aquí podemos utilizar dffTabla1x sin problema
     return dffTabla1x.to_dict('records')
 
+  #DECORADOR TABLA3
+@app.callback(
+   
+   
+    Output(component_id='table3A', component_property='data'),
+    
+    #Input('table2', 'data'),
+    Input('table1X', 'derived_virtual_data'),
+    #Input('table2', 'derived_virtual_row_ids'),
+   Input('table1X', 'derived_virtual_selected_rows'),
+    Input('table1X', 'selected_rows'),)
+   # Input('table2', 'data'),)
+   
+    #Input('table2', 'active_cell'))
   
+        
+def update_graphs(derived_virtual_data,derived_virtual_selected_rows,selected_rows):
+    
+    if (selected_rows)is None:
+        selected_rows = []
+    else:
+          
+        df=pd.DataFrame(derived_virtual_data)
+       
+     
+        df_filterd = df[df.index.isin(selected_rows)]
+        
+    
+       
+        return df_filterd.to_dict('records')
+   
+#DECORADOR TABLA4
+@app.callback(
+   
+    
+  
+   
+    Output(component_id='table4A', component_property='data'),
+    
+    #Input('table2', 'data'),
+    #Input('table2', 'derived_virtual_data'),
+    #Input('table2', 'derived_virtual_row_ids'),
+   # Input('table2', 'derived_virtual_selected_rows'),
+    #Input('table2', 'selected_rows'),
+    [Input('table3A','data')] 
+    #Input('table3','data')
+    )
+   
+    #Input('table2', 'active_cell'))
+  
+        
+def update_graphs(data):
+  
+    global dataf
+           
+    if data !=None:
+                
+        for dataf in data:
+            del dataf['EN_PLANTILLA']                   
+                 
+                
+                    
+            d= df[(df['ADSCRIPCION'] ==dataf['ADSCRIPCION']) &  (df['TURNO'] ==dataf['TURNO']) ]
+                   
+       
+        
+       
+            sjs= pd.DataFrame(d)
+            print("gatosb",data)
+       
+            return sjs.to_dict('records')
+       
+    
+       
 
+       
+
+
+            
+   
 
  #----------------------app.layout-------------------------
 
@@ -362,7 +442,7 @@ dash_table.DataTable(
         columns = [{'id':c, 'name':c} for c in 
                    df.loc[:,['ADSCRIPCION','TURNO','EN_PLANTILLA','NORMATIVA']]],
            #virtualization=True,
-           
+             row_selectable="multi",
                 style_data={
                # 'color':  '#b38e5d',
                 'color':  '#ffffff',
@@ -433,8 +513,179 @@ dash_table.DataTable(
 
 
                 }),
+# tabla POR PERSONAS
+dash_table.DataTable(
+        id='table3A',
+      
+       
+        #data=df.to_dict('records'),
+        #data = dffTabla1.to_dict('records'),
+        columns = [{'id':i, 'name':i, 'deletable':True} for i in 
+                   #SI SE LE PONE RFC DESGLOSA UNO A UNO CASO CONTRARIO ACUMULA
+                   df.loc[:,['ADSCRIPCION','RFC','A.Paterno','A.Materno','Nombre','CÓDIGO','SUELDO TAB','TURNO','RAMA','EN_PLANTILLA']]],
+    
+            
+       
+                style_data={
+              
+                'color':  '#ffffff',
+                'backgroundColor':'#621132'
+            },
+            fixed_rows = {'headers':True},
 
+            style_table = {'maxHeight':'450px',
+                          'backgroundColor':'#621132',
+                         #  'color':  '#b38e5d'},
+                           'color':  '#ffffff'},
 
+            style_header = {'backgroundColor':'#000000',
+                            'fontWeight':'bold',
+                            'border':'4px solid white',
+                            'textAlign':'center'},
+
+            style_data_conditional = [
+                     {
+                'if': {
+                    'filter_query': '{EN_PLANTILLA}  > {NORMATIVA}' ,
+                    'column_id': 'EN_PLANTILLA'
+                },
+                'color': 'red',
+                'fontWeight': 'bold',
+                'textAlign':'center',         
+            },
+                
+                  {
+                'if': {
+                    'filter_query': '{EN_PLANTILLA}  < {NORMATIVA}' ,
+                    'column_id': 'EN_PLANTILLA'
+                },
+                'color': 'yellow',
+                'fontWeight': 'bold',
+                 'textAlign':'center',     
+            },
+                
+               {
+                'if': {
+                    'filter_query': '{EN_PLANTILLA}  = {NORMATIVA}' ,
+                    'column_id': 'EN_PLANTILLA'
+                },
+                'color': 'lime',
+               'fontWeight': 'bold',
+                'textAlign':'right',   
+            },
+                {
+                'if': {
+                    'filter_query': '{NORMATIVA} = {NORMATIVA}',
+                    'column_id': 'NORMATIVA'
+                },
+                'color': 'lime',
+               'fontWeight': 'bold',
+                'textAlign':'center',   
+            }  
+
+              ],
+
+            style_cell = {
+                'textAlign':'left',
+                'border':'4px solid white',
+                 'color':'#b38e5d',
+                 
+                'maxWidth':'50px',
+                # 'whiteSpace':'normal'
+                'textOverflow':'ellipsis'
+
+                }
+),
+# Ulitma tabla
+dash_table.DataTable(
+        id='table4A',
+      
+        #data=df.to_dict('records'),
+        #data = dffTabla1.to_dict('records'),
+
+       
+        columns = [{'id':i, 'name':i, 'deletable':True,} for i in 
+                   #SI SE LE PONE RFC DESGLOSA UNO A UNO CASO CONTRARIO ACUMULA
+                   df.loc[:,['ADSCRIPCION','RFC','A.Paterno','A.Materno','Nombre','CÓDIGO','SUELDO TAB','TURNO','EN_PLANTILLA']]
+                     
+                   
+                   ],
+    
+        
+             
+
+                style_data={
+              
+                'color':  '#ffffff',
+                'backgroundColor':'#621132'
+            },
+            fixed_rows = {'headers':True},
+
+            style_table = {'maxHeight':'450px',
+                          'backgroundColor':'#621132',
+                         #  'color':  '#b38e5d'},
+                           'color':  '#ffffff',
+                            },
+
+            style_header = {'backgroundColor':'#000000',
+                            'fontWeight':'bold',
+                            'border':'4px solid white',
+                            'textAlign':'center'},
+
+            style_data_conditional = [
+                     {
+                'if': {
+                    'filter_query': '{EN_PLANTILLA}  > {NORMATIVA}' ,
+                    'column_id': 'EN_PLANTILLA'
+                },
+                'color': 'red',
+                'fontWeight': 'bold',
+                'textAlign':'center',         
+            },
+                
+                  {
+                'if': {
+                    'filter_query': '{EN_PLANTILLA}  < {NORMATIVA}' ,
+                    'column_id': 'EN_PLANTILLA'
+                },
+                'color': 'yellow',
+                'fontWeight': 'bold',
+                 'textAlign':'center',     
+            },
+                
+               {
+                'if': {
+                    'filter_query': '{EN_PLANTILLA}  = {NORMATIVA}' ,
+                    'column_id': 'EN_PLANTILLA'
+                },
+                'color': 'lime',
+               'fontWeight': 'bold',
+                'textAlign':'right',   
+            },
+                {
+                'if': {
+                    'filter_query': '{NORMATIVA} = {NORMATIVA}',
+                    'column_id': 'NORMATIVA'
+                },
+                'color': 'lime',
+               'fontWeight': 'bold',
+                'textAlign':'center',   
+            }  
+
+              ],
+
+            style_cell = {
+                'textAlign':'left',
+                'border':'4px solid white',
+                 'color':'#b38e5d',
+                 
+                #'maxWidth':'5px',
+                # 'whiteSpace':'normal'
+                'textOverflow':'ellipsis',
+                 #'width': 'auto' ,
+
+                }
+)
 
 ])
 
