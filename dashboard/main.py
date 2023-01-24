@@ -12,8 +12,9 @@ from dash.dash_table.Format import Group
 from dash import Dash, dash_table
 from func_crea_Graficos import crear_grafico_pie
 from func_crea_tablas_simple import create_table_simple
+import dash_auth
 # import dash_bootstrap_components as dbc
-
+LISTA_USUARIO =[['DIRECCION','A01'],['SUBDIRECCION','A02'],['JESUS','A03'],['JEFEDEPTO','A04']]
 
 meta_tags= [{'name':'viewport',
             'content': 'width=device-width, initial-scale=1.0, maximum-scale=1.2,minimum-scale=0,5'}]
@@ -22,11 +23,11 @@ external_stylesheets=[meta_tags,'assets/css.css','assets/normalize.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 #server = Flask(__name__)
-
+auth= dash_auth.BasicAuth(app,LISTA_USUARIO)
 # Read data from Excel file
-df = pd.read_excel("Plantilla Qna 24.xlsx", sheet_name='Resultados')
-df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
-df = df[["UM", "RFC", "A.Paterno", "A.Materno", "Nombre", "SUELDO TAB", "CÓDIGO", "ADSCRIPCION", "Area Hosp", "Sub_Area_Hosp", "NUCLEOS", "RAMA", "UNIDAD", "TURNO", "EN_PLANTILLA", "NORMATIVA"]]
+df = pd.read_excel('Plantilla Qna 24.xlsx', sheet_name='Resultados')
+df = df.apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
+df = df[['UM', 'RFC', 'A.Paterno', 'A.Materno', 'Nombre', 'SUELDO TAB', 'CÓDIGO', 'ADSCRIPCION', 'Area Hosp', 'Sub_Area_Hosp', 'NUCLEOS', 'RAMA', 'UNIDAD', 'TURNO', 'EN_PLANTILLA', 'TIPO CONTRATO','NORMATIVA']]
 
 
 # Define colors for the app
@@ -226,55 +227,62 @@ Input(component_id='seleccionaUnidades', component_property='value')
 def update_table(seleccionaUnidades):
    
     tipo_hospital={
-        'C60':{"MATUTINA":123, "VESPERTINA":56, "VELADA A":31, "VELADA B":29, 
-        "ESPECIAL DIURNA":30, "ESPECIAL NOCTURNA":0, "JORNADA ACUMULADA":0,"NO_DEFINIDO":0},
+        
+        'C0':{'MATUTINA':0, 'VESPERTINA':0, 'VELADA A':0, 'VELADA B':0, 
+        'ESPECIAL DIURNA':0, 'ESPECIAL NOCTURNA':0, 'JORNADA ACUMULADA':0,'NO_DEFINIDO':0},
 
-        'C50':{} 
+        'C30':{'MATUTINA':72, 'VESPERTINA':29, 'VELADA A':9, 'VELADA B':8, 
+        'ESPECIAL DIURNA':10, 'ESPECIAL NOCTURNA':0, 'JORNADA ACUMULADA':0,'NO_DEFINIDO':0},
+
+        'C60':{'MATUTINA':123, 'VESPERTINA':56, 'VELADA A':31, 'VELADA B':29, 
+        'ESPECIAL DIURNA':30, 'ESPECIAL NOCTURNA':0, 'JORNADA ACUMULADA':0,'NO_DEFINIDO':0},
+
+        'C90':{'MATUTINA':229, 'VESPERTINA':115, 'VELADA A':60, 'VELADA B':46, 
+        'ESPECIAL DIURNA':36, 'ESPECIAL NOCTURNA':1, 'JORNADA ACUMULADA':0,'NO_DEFINIDO':0},
+
+        'C120':{'MATUTINA':269, 'VESPERTINA':144, 'VELADA A':71, 'VELADA B':64, 
+        'ESPECIAL DIURNA':44, 'ESPECIAL NOCTURNA':9, 'JORNADA ACUMULADA':0,'NO_DEFINIDO':0},
 
         }
-   
-   
    
     # Inicializamos dffTabla1x como un DataFrame vacío
     dffTabla1x = pd.DataFrame()
  
-    if seleccionaUnidades == 'HOSPITAL GENERAL DE APAN':
-        print("lucatero")
-
-        #C60={"MATUTINA":123, "VESPERTINA":56, "VELADA A":31, "VELADA B":29, "ESPECIAL DIURNA":30, "ESPECIAL NOCTURNA":0, "JORNADA ACUMULADA":0,"NO_DEFINIDO":0} 
-        df['NORMATIVA'] = df['TURNO'].apply(lambda x: tipo_hospital['C60'][x] if not pd.isnull(x) else 0)
-
-
-        # Aquí asignamos un valor a dffTabla1x
-        dffTabla = df[df['ADSCRIPCION']==(seleccionaUnidades)]
-        dffTabla1x= dffTabla.groupby(['ADSCRIPCION','TURNO','NORMATIVA']).size().reset_index(name='EN_PLANTILLA')
-       
-
+    if seleccionaUnidades in ('HOSPITAL GENERAL DE APAN','HOSPITAL GENERAL DE ACTOPAN','HOSPITAL MATERNO INFANTIL','HOSPITAL GENERAL DE HUEJUTLA'):        
+            df['NORMATIVA'] = df['TURNO'].apply(lambda x: tipo_hospital['C60'][x] if not pd.isnull(x) else 0)
+    elif seleccionaUnidades in ('HOSPITAL GENERAL DE HUICHAPAN', 'HOSPITAL INTEGRAL DE JACALA', 'HOSPITAL ZIMAPAN'):
+            df['NORMATIVA'] = df['TURNO'].apply(lambda x: tipo_hospital['C30'][x] if not pd.isnull(x) else 0)
+    elif seleccionaUnidades in ('HOSPITAL GENERAL DEL VALLE DEL MEZQUITAL IXMIQUILPAN', 'HOSPITAL GENERAL DE TULA'):
+            df['NORMATIVA'] = df['TURNO'].apply(lambda x: tipo_hospital['C90'][x] if not pd.isnull(x) else 0)
+    elif seleccionaUnidades == 'HOSPITAL GENERAL TULANCINGO':
+            df['NORMATIVA'] = df['TURNO'].apply(lambda x: tipo_hospital['C120'][x] if not pd.isnull(x) else 0)
+    else:   df['NORMATIVA'] = df['TURNO'].apply(lambda x: tipo_hospital['C0'][x] if not pd.isnull(x) else 0)
+ 
+    print(df['NORMATIVA'] )  
+    dffTabla = df[df['ADSCRIPCION']==(seleccionaUnidades)]
+    dffTabla1x= dffTabla.groupby(['ADSCRIPCION','TURNO','NORMATIVA']).size().reset_index(name='EN_PLANTILLA')
+    
 
         # Calcula el total de la columna 'EN_PLANTILLA'
-        TOTAL = dffTabla1x['EN_PLANTILLA'].sum()
-        TOTAL1= dffTabla1x['NORMATIVA'].sum()
+    TOTAL = dffTabla1x['EN_PLANTILLA'].sum()
+    TOTAL1= dffTabla1x['NORMATIVA'].sum()
     # Agrega una fila al final de la tabla con el total
-        dffTabla1x =  dffTabla1x.append({'ADSCRIPCION': 'TOTAL', 'EN_PLANTILLA': TOTAL,  'NORMATIVA':TOTAL1}, ignore_index=True)
-        
-    # Aquí podemos utilizar dffTabla1x sin problema
-    return dffTabla1x.to_dict('records')
+    dffTabla1x =  dffTabla1x.append({'ADSCRIPCION': 'TOTAL', 'EN_PLANTILLA': TOTAL,  'NORMATIVA':TOTAL1}, ignore_index=True)
 
+    return dffTabla1x.to_dict('records')
+ 
+ 
   #DECORADOR TABLA3
 @app.callback(
    
    
     Output(component_id='table3A', component_property='data'),
     
-    #Input('table2', 'data'),
-    Input('table1X', 'derived_virtual_data'),
-    #Input('table2', 'derived_virtual_row_ids'),
-   Input('table1X', 'derived_virtual_selected_rows'),
+    
+    Input('table1X', 'derived_virtual_data'),     
+    Input('table1X', 'derived_virtual_selected_rows'),
     Input('table1X', 'selected_rows'),)
-   # Input('table2', 'data'),)
-   
-    #Input('table2', 'active_cell'))
-  
+     
         
 def update_graphs(derived_virtual_data,derived_virtual_selected_rows,selected_rows):
     
@@ -283,65 +291,31 @@ def update_graphs(derived_virtual_data,derived_virtual_selected_rows,selected_ro
     else:
           
         df=pd.DataFrame(derived_virtual_data)
-       
-     
         df_filterd = df[df.index.isin(selected_rows)]
-        
-    
-       
         return df_filterd.to_dict('records')
    
 #DECORADOR TABLA4
 @app.callback(
-   
-    
-  
-   
     Output(component_id='table4A', component_property='data'),
-    
-    #Input('table2', 'data'),
-    #Input('table2', 'derived_virtual_data'),
-    #Input('table2', 'derived_virtual_row_ids'),
-   # Input('table2', 'derived_virtual_selected_rows'),
-    #Input('table2', 'selected_rows'),
-    [Input('table3A','data')] 
-    #Input('table3','data')
-    )
-   
-    #Input('table2', 'active_cell'))
-  
-        
+   [Input('table3A','data')])
+       
 def update_graphs(data):
   
-    global dataf
+    global dataf 
            
     if data !=None:
                 
         for dataf in data:
             del dataf['EN_PLANTILLA']                   
-                 
-                
-                    
-            d= df[(df['ADSCRIPCION'] ==dataf['ADSCRIPCION']) &  (df['TURNO'] ==dataf['TURNO']) ]
                    
-       
-        
-       
+            d= df[(df['ADSCRIPCION'] ==dataf['ADSCRIPCION']) &  (df['TURNO'] ==dataf['TURNO']) ]
+             
             sjs= pd.DataFrame(d)
-            print("gatosb",data)
+            print('gatosb',data)
        
             return sjs.to_dict('records')
        
-    
-       
-
-       
-
-
-            
-   
-
- #----------------------app.layout-------------------------
+#----------------------app.layout-------------------------
 
 app.layout= html.Div([
    
@@ -354,11 +328,11 @@ app.layout= html.Div([
 #---------------------Create header--------------------------------------------------------   
         html.Div([
 
-                html.H1("DIRECCIÓN DE RECURSOS HUMANOS",)
+                html.H1('DIRECCIÓN DE RECURSOS HUMANOS',)
         ],className='header_title'),
 
-       # html.Label("Distribucion Global:", style={'fontSize':20, 'textAlign':'center', 'font-weight': 'bold','color': colors['text']}), 
-        html.Label("Distribucion Global:", className='etiqueta'), 
+       # html.Label('Distribucion Global:', style={'fontSize':20, 'textAlign':'center', 'font-weight': 'bold','color': colors['text']}), 
+        html.Label('Distribucion Global:', className='etiqueta'), 
                
 #--------------------------tabla globlal secretaria----------------------------        
         html.Div([
@@ -367,7 +341,7 @@ app.layout= html.Div([
 
         html.Div([
                 
-                html.Label("Seleccione una Unidad:", className='etiqueta'),
+                html.Label('Seleccione una Unidad:', className='etiqueta'),
 #-------------------Primer Dropdown-----------------------------------------
                 dcc.Dropdown(
                 id='seleccionaUnidad',
@@ -382,7 +356,7 @@ app.layout= html.Div([
         html.Div([
                 
 #------------------- tabla por unidad por ramas----------------------------------
-                html.Label("Distribucion de Unidad por Ramas:", className='etiqueta'),
+                html.Label('Distribucion de Unidad por Ramas:', className='etiqueta'),
                                 
 #---------------------grafica ramas--------------------------------------------
                 dcc.Graph(id='the_graph1'),                
@@ -391,31 +365,31 @@ app.layout= html.Div([
         ]),
             
 #-----------------------------------------------------------------------------------------------
-                html.Label("Distribucion Global por Turnos:", className='etiqueta'),
+                html.Label('Distribucion Global por Turnos:', className='etiqueta'),
 #------------------------grafico rama por unidad---------------------------------
                 dcc.Graph(id='the_graphTurnos'),
 
 #------------------- tabla por unidad por Turnos----------------------------------
-                create_table_simple('tabla2', "TURNO", "TURNO"),
+                create_table_simple('tabla2', 'TURNO', 'TURNO'),
 
         html.Div([
-                html.Label("Seleccione una Adscripción:", className='etiqueta'),
+                html.Label('Seleccione una Adscripción:', className='etiqueta'),
                 #----------------------Segundo Dropdown--------------------------------------
                 dcc.Dropdown(  
                 id='seleccionaUnidades',   
                 options=[],
                 multi=False,
                 style={'backgroundColor': colors['background2'],'color': colors['text1'], 'font-size': 15, 'font-weight': 'bold'})        
-        ],style={'border-color': '#333', 'border-width': '2px', 'border-style': 'dashed'}),
+        ],style={'border-color': '#333', 'border-width': '2px', }),
 
         html.Div([
 
-                html.Label("Distribucion por Unidad por Rama:", className='etiqueta'),
+                html.Label('Distribucion por Unidad por Rama:', className='etiqueta'),
 #-----------------------------------grafico por unidad por ramas------------------------------------------
                 dcc.Graph(id='theGraphUnidadRamas'),   
 #---------------------------------- tabla Unidades rama  -------------------------------------------------
                
-                create_table_simple('tabla3', "RAMA", "RAMA"),
+                create_table_simple('tabla3', 'RAMA', 'RAMA'),
                 
         ]),
 
@@ -423,18 +397,18 @@ app.layout= html.Div([
      
  #--------------------grafico por unidad por ramas------------------------------------------
          
-        html.Label("Distribucion por Unidad por Turnos:", className='etiqueta'),
+        html.Label('Distribucion por Unidad por Turnos:', className='etiqueta'),
 #-----------------------------------grafico por unidad por ramas------------------------------------------       
         dcc.Graph(id='theGraphUnidadTurnos'), 
  #------------------tabla por unidad  turnos-----------------------------------------------
-        create_table_simple('tabla4', "TURNO", "TURNO"),
-        create_table_simple('tabla8', "Sub_Area_Hosp", "Sub_Area_Hosp"),
+        create_table_simple('tabla4', 'TURNO', 'TURNO'),
+        create_table_simple('tabla8', 'Sub_Area_Hosp', 'Sub_Area_Hosp'),
 
         ]), 
 
 html.Div([
     
-html.Label("Comparación de Normativa VS Plantilla:", className='etiqueta'),
+html.Label('Comparación de Normativa VS Plantilla:', className='etiqueta'),
  # tabla nucleos
 dash_table.DataTable(
         id='table1X',
@@ -442,7 +416,7 @@ dash_table.DataTable(
         columns = [{'id':c, 'name':c} for c in 
                    df.loc[:,['ADSCRIPCION','TURNO','EN_PLANTILLA','NORMATIVA']]],
            #virtualization=True,
-             row_selectable="multi",
+             row_selectable='multi',
                 style_data={
                # 'color':  '#b38e5d',
                 'color':  '#ffffff',
@@ -513,6 +487,8 @@ dash_table.DataTable(
 
 
                 }),
+
+html.Label('Analítico por Trabajador:', className='etiqueta'),              
 # tabla POR PERSONAS
 dash_table.DataTable(
         id='table3A',
@@ -522,7 +498,7 @@ dash_table.DataTable(
         #data = dffTabla1.to_dict('records'),
         columns = [{'id':i, 'name':i, 'deletable':True} for i in 
                    #SI SE LE PONE RFC DESGLOSA UNO A UNO CASO CONTRARIO ACUMULA
-                   df.loc[:,['ADSCRIPCION','RFC','A.Paterno','A.Materno','Nombre','CÓDIGO','SUELDO TAB','TURNO','RAMA','EN_PLANTILLA']]],
+                   df.loc[:,['TURNO','EN_PLANTILLA']]],
     
             
        
@@ -600,13 +576,11 @@ dash_table.DataTable(
 dash_table.DataTable(
         id='table4A',
       
-        #data=df.to_dict('records'),
-        #data = dffTabla1.to_dict('records'),
-
+     
        
         columns = [{'id':i, 'name':i, 'deletable':True,} for i in 
                    #SI SE LE PONE RFC DESGLOSA UNO A UNO CASO CONTRARIO ACUMULA
-                   df.loc[:,['ADSCRIPCION','RFC','A.Paterno','A.Materno','Nombre','CÓDIGO','SUELDO TAB','TURNO','EN_PLANTILLA']]
+                   df.loc[:,['RFC','A.Paterno','A.Materno','Nombre','CÓDIGO','SUELDO TAB','TIPO CONTRATO']]
                      
                    
                    ],
@@ -689,8 +663,8 @@ dash_table.DataTable(
 
 ])
 
-])
+],className='contenedor')
 
 df.to_csv('modificado.csv')
-if __name__  == "__main__":
+if __name__  == '__main__':
        app.run_server(debug=True)
