@@ -24,6 +24,7 @@ external_stylesheets=[meta_tags,'assets/css.css','assets/normalize.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 #server = Flask(__name__)
 auth= dash_auth.BasicAuth(app,LISTA_USUARIO)
+server=app.server
 # Read data from Excel file
 df = pd.read_excel('Plantilla Qna 24.xlsx', sheet_name='Resultados')
 df = df.apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
